@@ -1,25 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sistema de Ventas Móvil</string>
-    <string name="title_ordenes">Órdenes de Compra</string>
-    <string name="title_crear_orden">Nueva Orden de Compra</string>
-    <string name="title_editar_orden">Editar Orden de Compra</string>
-    
-    <string name="btn_nueva_orden">+ Nueva Orden</string>
-    <string name="hint_nombre_cliente">Nombre del Comprador</string>
-    <string name="hint_direccion_envio">Dirección de Entrega</string>
-    <string name="hint_telefono">Teléfono de Contacto</string>
-    <string name="hint_cantidad">Cantidad</string>
-    
-    <string name="sec_datos_comprador">Datos del Comprador</string>
-    <string name="sec_agregar_items">Agregar Productos a la Orden</string>
-    <string name="sec_carrito">Productos en la Orden</string>
-    
-    <string name="btn_agregar_item">+ Agregar a la Orden</string>
-    <string name="btn_enviar_api">✔ Confirmar y Enviar a la API REST</string>
-    <string name="btn_actualizar_api">💾 Guardar Cambios en la API</string>
-    <string name="btn_limpiar">Limpiar Campos</string>
-    
-    <string name="menu_config_url">Configurar Servidor / ngrok</string>
-    <string name="menu_actualizar">Actualizar</string>
+
 </resources>

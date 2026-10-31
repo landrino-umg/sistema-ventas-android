@@ -26,8 +26,38 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    // Modelo sencillo para el Spinner de Productos
+    public static class ItemProducto {
+        private int id;
+        private String nombre;
+        private double precio;
+        private int stock;
+
+        public ItemProducto(int id, String nombre, double precio, int stock) {
+            this.id = id;
+            this.nombre = nombre;
+            this.precio = precio;
+            this.stock = stock;
+        }
+
+        public int getId() { return id; }
+        public String getNombre() { return nombre; }
+        public double getPrecio() { return precio; }
+        public int getStock() { return stock; }
+
+        @Override
+        public String toString() {
+            if (id == 0) {
+                return nombre; // "-- Seleccionar producto --"
+            }
+            return nombre + " (Stock: " + stock + ") - Q. " + String.format("%.2f", precio);
+        }
+    }
 
     // Botones del menú superior
     private Button btnMenuNuevaOrden;
@@ -43,9 +73,10 @@ public class MainActivity extends AppCompatActivity {
     private EditText txtNombre;
     private EditText txtDireccion;
     private EditText txtTelefono;
-    private EditText txtProductoId;
+    private Spinner cmbProducto;
     private EditText txtCantidad;
     private Button btnGuardarOrden;
+    private List<ItemProducto> listaProductos = new ArrayList<>();
 
     // Formulario Modificar Orden
     private EditText txtModificarId;
@@ -81,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
         txtNombre = findViewById(R.id.txtNombre);
         txtDireccion = findViewById(R.id.txtDireccion);
         txtTelefono = findViewById(R.id.txtTelefono);
-        txtProductoId = findViewById(R.id.txtProductoId);
+        cmbProducto = findViewById(R.id.cmbProducto);
         txtCantidad = findViewById(R.id.txtCantidad);
         btnGuardarOrden = findViewById(R.id.btnGuardarOrden);
 
@@ -108,6 +139,9 @@ public class MainActivity extends AppCompatActivity {
         btnModificarOrden.setOnClickListener(v -> modificarOrden());
         btnConsultarStock.setOnClickListener(v -> consultarStock());
 
+        // Cargar lista de productos para el dropdown
+        cargarProductosEnSpinner();
+
         mostrarPanel(1);
     }
 
@@ -119,6 +153,43 @@ public class MainActivity extends AppCompatActivity {
         btnMenuNuevaOrden.setText(opcion == 1 ? "• Nueva Orden •" : "Nueva Orden");
         btnMenuModificar.setText(opcion == 2 ? "• Modificar •" : "Modificar");
         btnMenuStock.setText(opcion == 3 ? "• Stock •" : "Stock");
+
+        if (opcion == 1 && listaProductos.size() <= 1) {
+            cargarProductosEnSpinner();
+        }
+    }
+
+    // ==========================================
+    // CARGAR PRODUCTOS EN SPINNER / DROPDOWN
+    // ==========================================
+    private void cargarProductosEnSpinner() {
+        peticionHttp(urlServidor + "/productos", "GET", null, (exito, respuesta) -> {
+            listaProductos.clear();
+            listaProductos.add(new ItemProducto(0, "-- Seleccione un producto --", 0, 0));
+
+            if (exito) {
+                try {
+                    JSONObject obj = new JSONObject(respuesta);
+                    JSONArray arr = obj.optJSONArray("data");
+                    if (arr != null) {
+                        for (int i = 0; i < arr.length(); i++) {
+                            JSONObject p = arr.getJSONObject(i);
+                            int id = p.optInt("id");
+                            String nombre = p.optString("nombre");
+                            double precio = p.optDouble("precio");
+                            int stock = p.optInt("stock");
+                            listaProductos.add(new ItemProducto(id, nombre, precio, stock));
+                        }
+                    }
+                } catch (Exception e) {
+                    // Silencioso o mensaje leve
+                }
+            }
+
+            ArrayAdapter<ItemProducto> adapter = new ArrayAdapter<>(MainActivity.this,
+                    android.R.layout.simple_spinner_dropdown_item, listaProductos);
+            cmbProducto.setAdapter(adapter);
+        });
     }
 
     // ==========================================
@@ -128,31 +199,42 @@ public class MainActivity extends AppCompatActivity {
         String nombre = txtNombre.getText().toString().trim();
         String direccion = txtDireccion.getText().toString().trim();
         String telefono = txtTelefono.getText().toString().trim();
-        String productoIdStr = txtProductoId.getText().toString().trim();
         String cantidadStr = txtCantidad.getText().toString().trim();
 
         if (nombre.isEmpty()) {
             mostrarMensaje("Validación", "Por favor ingrese el nombre del comprador.");
             return;
         }
-        if (productoIdStr.isEmpty()) {
-            mostrarMensaje("Validación", "Por favor ingrese el código del producto.");
+
+        ItemProducto productoSel = (ItemProducto) cmbProducto.getSelectedItem();
+        if (productoSel == null || productoSel.getId() == 0) {
+            mostrarMensaje("Validación", "Por favor seleccione un producto del catálogo.");
             return;
         }
+
         if (cantidadStr.isEmpty()) {
             mostrarMensaje("Validación", "Por favor ingrese la cantidad.");
             return;
         }
 
         try {
-            int prodId = Integer.parseInt(productoIdStr);
             int cant = Integer.parseInt(cantidadStr);
+            if (cant <= 0) {
+                mostrarMensaje("Validación", "La cantidad debe ser mayor a 0.");
+                return;
+            }
+
+            if (cant > productoSel.getStock()) {
+                mostrarMensaje("Stock Insuficiente", "El producto '" + productoSel.getNombre() +
+                        "' solo cuenta con " + productoSel.getStock() + " unidades disponibles en stock.");
+                return;
+            }
 
             JSONObject json = new JSONObject();
             json.put("nombreCliente", nombre);
             json.put("direccionEnvio", direccion.isEmpty() ? "Ciudad" : direccion);
             json.put("telefono", telefono.isEmpty() ? "N/A" : telefono);
-            json.put("productoId", prodId);
+            json.put("productoId", productoSel.getId());
             json.put("cantidad", cant);
             json.put("estado", "PENDIENTE");
 
@@ -160,13 +242,15 @@ public class MainActivity extends AppCompatActivity {
                 if (exito) {
                     mostrarMensaje("Orden Guardada", "La orden de compra se registró con éxito en la base de datos.");
                     limpiarFormularioNuevaOrden();
+                    // Refrescar inventario y spinner para actualizar stock
+                    cargarProductosEnSpinner();
                 } else {
                     mostrarMensaje("Error", "No se pudo registrar la orden:\n" + respuesta);
                 }
             });
 
         } catch (NumberFormatException e) {
-            mostrarMensaje("Error", "El código de producto y la cantidad deben ser números enteros.");
+            mostrarMensaje("Error", "La cantidad debe ser un número entero.");
         } catch (Exception e) {
             mostrarMensaje("Error", "Error al procesar la solicitud: " + e.getMessage());
         }
@@ -176,7 +260,9 @@ public class MainActivity extends AppCompatActivity {
         txtNombre.setText("");
         txtDireccion.setText("");
         txtTelefono.setText("");
-        txtProductoId.setText("");
+        if (cmbProducto.getAdapter() != null && cmbProducto.getCount() > 0) {
+            cmbProducto.setSelection(0);
+        }
         txtCantidad.setText("1");
     }
 
@@ -297,6 +383,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         urlServidor = nuevaUrl;
                         prefs.edit().putString("url_api", urlServidor).apply();
+                        cargarProductosEnSpinner();
                         Toast.makeText(this, "URL guardada", Toast.LENGTH_SHORT).show();
                     }
                 })
