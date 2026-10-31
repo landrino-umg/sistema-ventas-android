@@ -1,131 +1,298 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="#F5F6FA"
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Banner de Conexión API / ngrok -->
-        <LinearLayout
-            android:id="@+id/bannerConexion"
+        <!-- TÍTULO PRINCIPAL -->
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/surface"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="10dp">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@android:drawable/stat_sys_upload"
-                app:tint="@color/primary" />
-
-            <TextView
-                android:id="@+id/tvUrlActual"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:singleLine="true"
-                android:text="API: http://10.0.2.2:8080/api"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCambiarUrl"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:text="Cambiar"
-                android:textSize="12sp" />
-
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/card_border" />
-
-        <!-- Barra de Progreso / Cargando -->
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:visibility="gone" />
-
-        <!-- Mensaje si no hay órdenes -->
-        <LinearLayout
-            android:id="@+id/layoutVacio"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical"
-            android:padding="32dp"
-            android:visibility="gone">
+            android:text="🛒 Sistema de Ventas"
+            android:textColor="#1A237E"
+            android:textSize="22sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🛒"
-                android:textSize="48sp" />
-
-            <TextView
-                android:id="@+id/tvMensajeVacio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="No hay órdenes de venta registradas aún."
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:text="Presiona el botón '+' para crear una nueva orden y enviarla a la API REST."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-        </LinearLayout>
-
-        <!-- Lista de Órdenes (RecyclerView) -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvOrdenes"
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:clipToPadding="false"
-            android:padding="12dp" />
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:text="Integración Android con API REST (ngrok)"
+            android:textColor="#5C6BC0"
+            android:textSize="14sp" />
+
+        <!-- SECCIÓN 1: CONFIGURACIÓN DE URL DEL SERVIDOR / NGROK -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🌐 URL del Servidor API REST / ngrok"
+                    android:textColor="#1A237E"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="Base URL del API">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etUrlApi"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:text="http://10.0.2.2:8080/api"
+                        android:textSize="13sp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button
+                    android:id="@+id/btnProbarConexion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:backgroundTint="#3949AB"
+                    android:text="Probar Conexión (GET /status)" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- SECCIÓN 2: CREAR ORDEN DE VENTA (POST) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="➕ Crear Orden de Venta (POST)"
+                    android:textColor="#2E7D32"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="Nombre del Cliente">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etNombreCliente"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName"
+                        android:text="Carlos Mendoza" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:hint="ID Producto">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etProductoId"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="2" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:hint="Cantidad">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etCantidad"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="1" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnCrearOrden"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:backgroundTint="#2E7D32"
+                    android:text="Crear Orden (POST /api/pedidos)" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- SECCIÓN 3: EDITAR ORDEN DE VENTA (PUT) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✏️ Editar Orden de Venta (PUT)"
+                    android:textColor="#E65100"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:hint="No. Orden a Editar">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etIdOrdenEditar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="35" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nuevo Estado:"
+                            android:textColor="#555"
+                            android:textSize="12sp" />
+
+                        <Spinner
+                            android:id="@+id/spNuevoEstado"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="4dp"
+                            android:background="@android:drawable/btn_dropdown" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnEditarOrden"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:backgroundTint="#E65100"
+                    android:text="Actualizar Orden (PUT /api/pedidos/{id})" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- SECCIÓN 4: RESULTADO Y RESPUESTA DEL SERVIDOR -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📩 Respuesta del Servidor API REST:"
+                    android:textColor="#37474F"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvRespuestaApi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="#ECEFF1"
+                    android:padding="12dp"
+                    android:text="Presiona un botón para interactuar con la API REST..."
+                    android:textColor="#263238"
+                    android:textSize="13sp"
+                    android:typeface="monospace" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 
-    <!-- Botón Flotante para Crear Orden -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabNuevaOrden"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:text="@string/btn_nueva_orden"
-        android:textColor="@color/surface"
-        app:backgroundTint="@color/primary"
-        app:icon="@android:drawable/ic_input_add"
-        app:iconTint="@color/surface" />
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</ScrollView>

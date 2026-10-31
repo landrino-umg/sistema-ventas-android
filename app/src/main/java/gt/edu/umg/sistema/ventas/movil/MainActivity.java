@@ -1,47 +1,47 @@
 package gt.edu.umg.sistema.ventas.movil;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.ProgressBar;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.TextInputEditText;
+import org.json.JSONObject;
 
-import java.util.List;
-
-import gt.edu.umg.sistema.ventas.movil.adapter.OrdenAdapter;
-import gt.edu.umg.sistema.ventas.movil.model.Pedido;
-import gt.edu.umg.sistema.ventas.movil.network.ApiClient;
-import gt.edu.umg.sistema.ventas.movil.network.ConfigManager;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 /**
- * Pantalla principal que lista las órdenes de venta registradas a través de la API REST.
- * Permite ver el estado, abrir el formulario para crear nuevas órdenes o editar las existentes.
+ * Aplicación Android para la integración con la API REST del Sistema de Ventas.
+ * Permite probar conexión (GET), crear una orden de venta (POST) y editar una orden (PUT).
  */
-public class MainActivity extends AppCompatActivity implements OrdenAdapter.OnOrdenClickListener {
+public class MainActivity extends AppCompatActivity {
 
-    private TextView tvUrlActual;
-    private MaterialButton btnCambiarUrl;
-    private ProgressBar progressBar;
-    private View layoutVacio;
-    private RecyclerView rvOrdenes;
-    private ExtendedFloatingActionButton fabNuevaOrden;
+    private EditText etUrlApi;
+    private Button btnProbarConexion;
 
-    private OrdenAdapter adapter;
+    // Crear Orden
+    private EditText etNombreCliente;
+    private EditText etProductoId;
+    private EditText etCantidad;
+    private Button btnCrearOrden;
+
+    // Editar Orden
+    private EditText etIdOrdenEditar;
+    private Spinner spNuevoEstado;
+    private Button btnEditarOrden;
+
+    // Resultado
+    private TextView tvRespuestaApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,146 +49,165 @@ public class MainActivity extends AppCompatActivity implements OrdenAdapter.OnOr
         setContentView(R.layout.activity_main);
 
         // Inicializar vistas
-        tvUrlActual = findViewById(R.id.tvUrlActual);
-        btnCambiarUrl = findViewById(R.id.btnCambiarUrl);
-        progressBar = findViewById(R.id.progressBar);
-        layoutVacio = findViewById(R.id.layoutVacio);
-        rvOrdenes = findViewById(R.id.rvOrdenes);
-        fabNuevaOrden = findViewById(R.id.fabNuevaOrden);
+        etUrlApi = findViewById(R.id.etUrlApi);
+        btnProbarConexion = findViewById(R.id.btnProbarConexion);
 
-        // Configurar RecyclerView
-        rvOrdenes.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new OrdenAdapter(this);
-        rvOrdenes.setAdapter(adapter);
+        etNombreCliente = findViewById(R.id.etNombreCliente);
+        etProductoId = findViewById(R.id.etProductoId);
+        etCantidad = findViewById(R.id.etCantidad);
+        btnCrearOrden = findViewById(R.id.btnCrearOrden);
 
-        // Eventos
-        actualizarTextoUrl();
-        btnCambiarUrl.setOnClickListener(v -> mostrarDialogoConfigUrl());
+        etIdOrdenEditar = findViewById(R.id.etIdOrdenEditar);
+        spNuevoEstado = findViewById(R.id.spNuevoEstado);
+        btnEditarOrden = findViewById(R.id.btnEditarOrden);
 
-        fabNuevaOrden.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, FormularioOrdenActivity.class);
-            startActivity(intent);
-        });
+        tvRespuestaApi = findViewById(R.id.tvRespuestaApi);
+
+        // Configurar opciones del spinner de estado
+        String[] estados = new String[]{"PENDIENTE", "COMPLETADA", "CANCELADA"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, estados);
+        spNuevoEstado.setAdapter(adapter);
+
+        // Eventos de botones
+        btnProbarConexion.setOnClickListener(v -> probarConexion());
+        btnCrearOrden.setOnClickListener(v -> crearOrdenVenta());
+        btnEditarOrden.setOnClickListener(v -> editarOrdenVenta());
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        actualizarTextoUrl();
-        cargarOrdenes();
+    /**
+     * 1. GET /api/status - Verifica que la API REST y la Base de Datos respondan.
+     */
+    private void probarConexion() {
+        String baseUrl = obtenerBaseUrl();
+        tvRespuestaApi.setText("Conectando con el servidor...");
+
+        ejecutarPeticionHttp(baseUrl + "/status", "GET", null);
     }
 
-    private void actualizarTextoUrl() {
-        String url = ConfigManager.getBaseUrl(this);
-        tvUrlActual.setText("API: " + url);
-    }
+    /**
+     * 2. POST /api/pedidos - Requerimiento principal: Crear una Orden de Venta.
+     */
+    private void crearOrdenVenta() {
+        String cliente = etNombreCliente.getText().toString().trim();
+        String prodIdStr = etProductoId.getText().toString().trim();
+        String cantStr = etCantidad.getText().toString().trim();
 
-    private void cargarOrdenes() {
-        progressBar.setVisibility(View.VISIBLE);
-        layoutVacio.setVisibility(View.GONE);
-
-        ApiClient.getInstance().getPedidos(this, new ApiClient.ApiCallback<List<Pedido>>() {
-            @Override
-            public void onSuccess(List<Pedido> pedidos) {
-                progressBar.setVisibility(View.GONE);
-                adapter.setLista(pedidos);
-                if (pedidos == null || pedidos.isEmpty()) {
-                    layoutVacio.setVisibility(View.VISIBLE);
-                } else {
-                    layoutVacio.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onError(String error) {
-                progressBar.setVisibility(View.GONE);
-                layoutVacio.setVisibility(View.VISIBLE);
-                Snackbar.make(rvOrdenes, "Error API: " + error, Snackbar.LENGTH_LONG)
-                        .setAction("Reintentar", v -> cargarOrdenes())
-                        .show();
-            }
-        });
-    }
-
-    @Override
-    public void onEditarOrden(Pedido pedido) {
-        Intent intent = new Intent(MainActivity.this, FormularioOrdenActivity.class);
-        intent.putExtra("PEDIDO_ID", pedido.getId());
-        startActivity(intent);
-    }
-
-    private void mostrarDialogoConfigUrl() {
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_config_url, null);
-        TextInputEditText etUrl = view.findViewById(R.id.etConfigUrl);
-        MaterialButton btnEmulador = view.findViewById(R.id.btnPresetEmulador);
-        MaterialButton btnLocalhost = view.findViewById(R.id.btnPresetLocalhost);
-
-        etUrl.setText(ConfigManager.getBaseUrl(this));
-
-        btnEmulador.setOnClickListener(v -> etUrl.setText("http://10.0.2.2:8080/api"));
-        btnLocalhost.setOnClickListener(v -> etUrl.setText("http://localhost:8080/api"));
-
-        new AlertDialog.Builder(this)
-                .setTitle("Configurar Conexión API")
-                .setView(view)
-                .setPositiveButton("Guardar", (dialog, which) -> {
-                    String nuevaUrl = etUrl.getText() != null ? etUrl.getText().toString().trim() : "";
-                    if (!nuevaUrl.isEmpty()) {
-                        ConfigManager.setBaseUrl(this, nuevaUrl);
-                        actualizarTextoUrl();
-                        Toast.makeText(this, "URL actualizada", Toast.LENGTH_SHORT).show();
-                        cargarOrdenes();
-                    }
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.action_actualizar) {
-            cargarOrdenes();
-            return true;
-        } else if (id == R.id.action_config_url) {
-            mostrarDialogoConfigUrl();
-            return true;
-        } else if (id == R.id.action_probar_conexion) {
-            probarConexionApi();
-            return true;
+        if (cliente.isEmpty() || prodIdStr.isEmpty() || cantStr.isEmpty()) {
+            Toast.makeText(this, "Completa todos los campos para crear la orden", Toast.LENGTH_SHORT).show();
+            return;
         }
-        return super.onOptionsItemSelected(item);
+
+        try {
+            int productoId = Integer.parseInt(prodIdStr);
+            int cantidad = Integer.parseInt(cantStr);
+
+            // Construir payload JSON
+            JSONObject json = new JSONObject();
+            json.put("nombreCliente", cliente);
+            json.put("productoId", productoId);
+            json.put("cantidad", cantidad);
+            json.put("estado", "PENDIENTE");
+
+            String baseUrl = obtenerBaseUrl();
+            tvRespuestaApi.setText("Enviando orden a la API REST (POST)...");
+
+            ejecutarPeticionHttp(baseUrl + "/pedidos", "POST", json.toString());
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Error en los datos numéricos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private void probarConexionApi() {
-        progressBar.setVisibility(View.VISIBLE);
-        ApiClient.getInstance().testConnection(this, new ApiClient.ApiCallback<String>() {
-            @Override
-            public void onSuccess(String result) {
-                progressBar.setVisibility(View.GONE);
-                new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Conexión Exitosa ✅")
-                        .setMessage(result + "\n\nServidor API REST respondiendo correctamente.")
-                        .setPositiveButton("OK", null)
-                        .show();
-            }
+    /**
+     * 3. PUT /api/pedidos/{id} - Requerimiento complementario: Editar una Orden.
+     */
+    private void editarOrdenVenta() {
+        String idOrdenStr = etIdOrdenEditar.getText().toString().trim();
+        String nuevoEstado = spNuevoEstado.getSelectedItem().toString();
 
-            @Override
-            public void onError(String error) {
-                progressBar.setVisibility(View.GONE);
-                new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Error de Conexión ❌")
-                        .setMessage("No se pudo conectar con la API REST:\n" + error + "\n\nVerifica que el servidor esté activo y que la URL de ngrok sea correcta.")
-                        .setPositiveButton("Configurar URL", (d, w) -> mostrarDialogoConfigUrl())
-                        .setNegativeButton("Cerrar", null)
-                        .show();
+        if (idOrdenStr.isEmpty()) {
+            Toast.makeText(this, "Ingresa el ID de la orden a editar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            int idOrden = Integer.parseInt(idOrdenStr);
+
+            // Construir payload JSON
+            JSONObject json = new JSONObject();
+            json.put("estado", nuevoEstado);
+
+            String baseUrl = obtenerBaseUrl();
+            tvRespuestaApi.setText("Actualizando orden #" + idOrden + " (PUT)...");
+
+            ejecutarPeticionHttp(baseUrl + "/pedidos/" + idOrden, "PUT", json.toString());
+
+        } catch (Exception e) {
+            Toast.makeText(this, "ID de orden inválido", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Método auxiliar de red: ejecuta la petición HTTP en segundo plano
+     * y entrega la respuesta del servidor en el hilo principal de la interfaz gráfica.
+     */
+    private void ejecutarPeticionHttp(String urlStr, String metodo, String jsonBody) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod(metodo);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setRequestProperty("Accept", "application/json");
+
+                if (jsonBody != null && (metodo.equals("POST") || metodo.equals("PUT"))) {
+                    conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                    conn.setDoOutput(true);
+                    try (OutputStream os = conn.getOutputStream()) {
+                        os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+                    }
+                }
+
+                int statusCode = conn.getResponseCode();
+                InputStream is = (statusCode >= 200 && statusCode < 400) ? conn.getInputStream() : conn.getErrorStream();
+
+                StringBuilder response = new StringBuilder();
+                if (is != null) {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            response.append(line).append("\n");
+                        }
+                    }
+                }
+
+                String resultadoFinal = "HTTP " + statusCode + " (" + metodo + ")\n\n" + response.toString();
+
+                runOnUiThread(() -> {
+                    tvRespuestaApi.setText(resultadoFinal);
+                    if (statusCode >= 200 && statusCode < 300) {
+                        Toast.makeText(MainActivity.this, "Operación exitosa (HTTP " + statusCode + ")", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Respuesta del servidor: HTTP " + statusCode, Toast.LENGTH_LONG).show();
+                    }
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    String errorMsg = "Error de conexión:\n" + e.getMessage() + "\n\nVerifica que la API REST esté activa y la URL de ngrok sea correcta.";
+                    tvRespuestaApi.setText(errorMsg);
+                    Toast.makeText(MainActivity.this, "Fallo al conectar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
             }
-        });
+        }).start();
+    }
+
+    private String obtenerBaseUrl() {
+        String url = etUrlApi.getText().toString().trim();
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url;
     }
 }

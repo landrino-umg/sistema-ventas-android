@@ -15,7 +15,7 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.SistemaVentasMovil">
 
-        <!-- Pantalla Principal: Listado y Menú de Órdenes -->
+        <!-- Actividad Principal: Formulario de Creación y Edición de Órdenes -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -24,12 +24,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Pantalla de Formulario: Crear / Editar Orden de Compra -->
-        <activity
-            android:name=".FormularioOrdenActivity"
-            android:exported="false"
-            android:parentActivityName=".MainActivity" />
 
     </application>
 
