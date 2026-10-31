@@ -15,7 +15,7 @@
 
         <!-- Actividad Principal: Formulario de Creación y Edición de Órdenes -->
         <activity
-            android:name=".MainActivity"
+            android:name="gt.edu.umg.sistema.ventas.movil.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
